@@ -1,72 +1,51 @@
 const bookModel = require("../Models/bookModel");
-
-const mongoose = require("mongoose");
-const validator = require("validator");
 const userModel = require("../Models/userModel");
 const reviewModel = require("../Models/reviewModel");
 const { findOneAndUpdate } = require("../Models/userModel");
+
+const mongoose = require("mongoose");
+const validator = require("validator");
+
 const aws = require("aws-sdk");
 const { uploadFile } = require("./aws");
 
 let isbnRegex = /^(?=(?:\D*\d){10}(?:(?:\D*\d){3})?$)[\d-]+$/;
 let validateTitle = /^[^0-9][a-z , A-Z0-9_ ? @ ! $ % & * : ]+$/;
 
+//^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Creating book here ^^^^^^^^^^^^^^^^^^^^^\\
 const createBook = async (req, res) => {
   try {
     let data = JSON.parse(req.body.data);
     let files = req.files;
 
     let uploadedFileURL;
-    if (files && files.length > 0) {
+    if (files && files.length > 0) { //************ Here we are passing data to AWS by calling function *****\\
       uploadedFileURL = await uploadFile(files[0]);
     } else {
       return res.status(400).send({ msg: "No file found" });
     }
 
     if (Object.keys(data).length === 0)
-      return res
-        .status(400)
-        .send({ status: false, message: "plz provide valid details" });
+      return res.status(400).send({ status: false, message: "plz provide valid details" });
 
-    let {
-      title,
-      excerpt,
-      userId,
-      ISBN,
-      category,
-      subcategory,
-      reviews,
-      releasedAt,
-    } = data;
+    let { title,excerpt,userId,ISBN, category,subcategory,reviews,releasedAt} = data;
 
     let findBookbyTitle = await bookModel.findOne({ title: title });
     if (findBookbyTitle)
-      return res
-        .status(409)
-        .send({ status: false, message: "title is already in exist" });
+      return res.status(409).send({ status: false, message: "title is already in exist" });
 
     if (!title) {
-      return res
-        .status(400)
-        .send({ status: false, message: "title is required" });
+      return res.status(400).send({ status: false, message: "title is required" });
     }
     if (!validateTitle.test(title.split(" ").join("")))
-      return res
-        .status(400)
-        .send({ status: false, message: "plz enter valid title" });
+      return res.status(400).send({ status: false, message: "plz enter valid title" });
 
     if (!excerpt)
-      return res
-        .status(400)
-        .send({ status: false, message: "excerpt is mandatory" });
+      return res.status(400) .send({ status: false, message: "excerpt is mandatory" });
     if (!validateTitle.test(excerpt.split(" ").join("")))
-      return res
-        .status(400)
-        .send({ status: false, message: "plz enter valid excerpt" });
+      return res.status(400).send({ status: false, message: "plz enter valid excerpt" });
     if (!userId)
-      return res
-        .status(400)
-        .send({ status: false, message: "userId is mandatory" });
+      return res.status(400).send({ status: false, message: "userId is mandatory" });
 
     userId = data.userId.trim();
     data.userId = userId;
@@ -107,13 +86,13 @@ const createBook = async (req, res) => {
         .status(400)
         .send({ status: false, message: "plz enter valid name" });
 
-    if(!releasedAt) return res
-    .status(400)
-    .send({
-      status: false,
-      message:
-        " releasedAt is mandatory,plz send date in this formate (YYYY/MM/DD) ",
-    });
+    if (!releasedAt) return res
+      .status(400)
+      .send({
+        status: false,
+        message:
+          " releasedAt is mandatory,plz send date in this formate (YYYY/MM/DD) ",
+      });
 
     if (!validator.isDate(releasedAt))
       return res
